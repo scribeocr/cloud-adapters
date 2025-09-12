@@ -1,0 +1,19 @@
+{
+  "name": "scribe.js-cloud-adapters",
+  "version": "0.1.0",
+  "description": "Adapters for using cloud OCR APIs with Scribe.js.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/scribeocr/cloud-adapters.git"
+  },
+  "author": "Balearica",
+  "license": "AGPL-3.0",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.887.0",
+    "@aws-sdk/client-textract": "^3.887.0"
+  }
+}
