@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+import fs from 'fs';
+import path from 'path';
 import { OcrEngineAWSTextractPdf } from '../awsTextractPdf.js';
 
 async function main() {
@@ -13,6 +15,7 @@ Arguments:
 Options:
   --layout               Analyze layout structure
   --tables               Analyze layout and tables
+  --output <file>        Save output to a file. Defaults to <filePath>_AwsTextract.json
   --s3-bucket <bucket>   S3 bucket name (required for PDF files)
   --s3-key <key>         S3 key prefix (optional, auto-generated if not provided)
   --keep-s3-file         Keep the uploaded S3 file after processing
@@ -38,6 +41,9 @@ Examples:
   # Process a PDF with table analysis
   ./runAwsTextractPdf.js document.pdf --s3-bucket my-bucket --tables
 
+  # Save output to a file
+  ./runAwsTextractPdf.js document.pdf --s3-bucket my-bucket --output result.json
+
   # Keep the S3 file after processing
   ./runAwsTextractPdf.js document.pdf --s3-bucket my-bucket --keep-s3-file
 
@@ -57,6 +63,7 @@ Examples:
     keepS3File: false,
     pollingInterval: 5000,
     maxWaitTime: 300000,
+    outputFile: null,
   };
 
   for (let i = 1; i < args.length; i++) {
@@ -67,6 +74,14 @@ Examples:
       case '--tables':
         options.analyzeLayout = true;
         options.analyzeLayoutTables = true;
+        break;
+      case '--output':
+        if (i + 1 < args.length) {
+          options.outputFile = args[++i];
+        } else {
+          console.error('Error: --output requires a file path');
+          process.exit(1);
+        }
         break;
       case '--s3-bucket':
         if (i + 1 < args.length) {
@@ -117,12 +132,12 @@ Examples:
     }
   }
 
-  try {
-    console.log(`Processing file: ${filePath}`);
-    if (options.s3Bucket) {
-      console.log(`Using S3 bucket: ${options.s3Bucket}`);
-    }
+  if (!options.outputFile) {
+    const inputFilename = path.basename(filePath, path.extname(filePath));
+    options.outputFile = `${inputFilename}_AwsTextract.json`;
+  }
 
+  try {
     const result = await OcrEngineAWSTextractPdf.recognizeFile(filePath, options);
 
     if (!result.success) {
@@ -131,23 +146,16 @@ Examples:
     }
 
     if (options.analyzeLayout || options.analyzeLayoutTables) {
-      console.log('\n=== TEXTRACT ANALYSIS RESULTS ===');
-      if (result.data.DocumentMetadata) {
-        console.log(`Pages: ${result.data.DocumentMetadata.Pages}`);
-      }
       if (result.data.Blocks) {
-        console.log(`Total blocks found: ${result.data.Blocks.length}`);
-
         const blockTypes = {};
         result.data.Blocks.forEach((block) => {
           blockTypes[block.BlockType] = (blockTypes[block.BlockType] || 0) + 1;
         });
-        console.log('Block types:', blockTypes);
       }
     }
 
-    console.log('\n=== JSON OUTPUT ===');
-    console.log(JSON.stringify(result.data, null, 2));
+    fs.writeFileSync(options.outputFile, JSON.stringify(result.data, null, 2));
+    console.log(`Output saved to ${options.outputFile}`);
   } catch (err) {
     console.error(`Unexpected error: ${err.message || err}`);
     process.exit(99);
