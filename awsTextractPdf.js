@@ -21,18 +21,49 @@ export class OcrEngineAWSTextractPdf {
   }
 
   /**
-   * Recognize text from image or PDF file
-   * @param {string} filePath - Path to the file
+   * Recognize text from an image file synchronously.
+   * @param {string} filePath - Path to the image file
    * @param {Object} [options]
    * @param {boolean} [options.analyzeLayout] - Whether to analyze layout
    * @param {boolean} [options.analyzeLayoutTables] - Whether to analyze layout tables
-   * @param {string} [options.s3Bucket] - S3 bucket name (required for PDF files)
+   */
+  static recognizeFileSync = async (filePath, {
+    analyzeLayout = false,
+    analyzeLayoutTables = false,
+  } = {}) => {
+    try {
+      const fileExtension = extname(filePath).toLowerCase();
+      if (!['.png', '.jpg', '.jpeg', '.tiff'].includes(fileExtension)) {
+        return {
+          success: false,
+          error: `Unsupported file format for sync processing: ${fileExtension}`,
+          errorCode: 'UnsupportedFormat',
+        };
+      }
+      const fileData = await readFile(filePath);
+      return await this.recognizeImageSync(fileData, { analyzeLayout, analyzeLayoutTables });
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message,
+        errorCode: error.name,
+      };
+    }
+  };
+
+  /**
+   * Recognize text from a PDF file asynchronously.
+   * @param {string} filePath - Path to the PDF file
+   * @param {Object} [options]
+   * @param {boolean} [options.analyzeLayout] - Whether to analyze layout
+   * @param {boolean} [options.analyzeLayoutTables] - Whether to analyze layout tables
+   * @param {string} [options.s3Bucket] - S3 bucket name
    * @param {string} [options.s3Key] - S3 key prefix (optional, auto-generated if not provided)
    * @param {boolean} [options.keepS3File] - Whether to keep the uploaded S3 file after processing
    * @param {number} [options.pollingInterval] - Polling interval in milliseconds (default: 5000)
    * @param {number} [options.maxWaitTime] - Maximum wait time in milliseconds (default: 300000 = 5 minutes)
    */
-  static recognizeFile = async (filePath, {
+  static recognizeFileAsync = async (filePath, {
     analyzeLayout = false,
     analyzeLayoutTables = false,
     s3Bucket,
@@ -43,39 +74,32 @@ export class OcrEngineAWSTextractPdf {
   } = {}) => {
     try {
       const fileExtension = extname(filePath).toLowerCase();
+      if (fileExtension !== '.pdf') {
+        return {
+          success: false,
+          error: `Unsupported file format for async processing: ${fileExtension}`,
+          errorCode: 'UnsupportedFormat',
+        };
+      }
+
+      if (!s3Bucket) {
+        return {
+          success: false,
+          error: 'S3 bucket name is required for PDF processing',
+          errorCode: 'MissingS3Bucket',
+        };
+      }
+
       const fileData = await readFile(filePath);
-
-      // For single-page images, use synchronous API
-      if (['.png', '.jpg', '.jpeg', '.tiff'].includes(fileExtension)) {
-        return await this.recognizeImageSync(fileData, { analyzeLayout, analyzeLayoutTables });
-      }
-
-      // For PDF files, use asynchronous API with S3
-      if (fileExtension === '.pdf') {
-        if (!s3Bucket) {
-          return {
-            success: false,
-            error: 'S3 bucket name is required for PDF processing',
-            errorCode: 'MissingS3Bucket',
-          };
-        }
-
-        return await this.recognizePdfAsync(fileData, filePath, {
-          analyzeLayout,
-          analyzeLayoutTables,
-          s3Bucket,
-          s3Key,
-          keepS3File,
-          pollingInterval,
-          maxWaitTime,
-        });
-      }
-
-      return {
-        success: false,
-        error: `Unsupported file format: ${fileExtension}`,
-        errorCode: 'UnsupportedFormat',
-      };
+      return await this.recognizePdfAsync(fileData, {
+        analyzeLayout,
+        analyzeLayoutTables,
+        s3Bucket,
+        s3Key,
+        keepS3File,
+        pollingInterval,
+        maxWaitTime,
+      });
     } catch (error) {
       return {
         success: false,
@@ -126,10 +150,9 @@ export class OcrEngineAWSTextractPdf {
   /**
    * Asynchronous PDF recognition
    * @param {Uint8Array} pdfData
-   * @param {string} filePath
    * @param {Object} options
    */
-  static recognizePdfAsync = async (pdfData, filePath, {
+  static recognizePdfAsync = async (pdfData, {
     analyzeLayout = false,
     analyzeLayoutTables = false,
     s3Bucket,
@@ -231,7 +254,7 @@ export class OcrEngineAWSTextractPdf {
   static pollForCompletion = async (textractClient, jobId, isAnalysis, pollingInterval, maxWaitTime) => {
     const startTime = Date.now();
     let nextToken = null;
-    const allBlocks = [];
+    const allResponses = [];
 
     while (Date.now() - startTime < maxWaitTime) {
       try {
@@ -251,22 +274,15 @@ export class OcrEngineAWSTextractPdf {
         const response = await textractClient.send(getCommand);
 
         if (response.JobStatus === 'SUCCEEDED') {
-          if (response.Blocks) {
-            allBlocks.push(...response.Blocks);
-          }
+          allResponses.push(response);
 
           if (response.NextToken) {
             nextToken = response.NextToken;
             continue;
           } else {
-            console.log(`Job completed successfully. Total blocks: ${allBlocks.length}`);
             return {
               success: true,
-              data: {
-                ...response,
-                Blocks: allBlocks,
-                JobStatus: 'SUCCEEDED',
-              },
+              data: allResponses,
             };
           }
         } else if (response.JobStatus === 'FAILED') {
