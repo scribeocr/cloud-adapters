@@ -15,9 +15,9 @@ import {
 import { readFile } from 'node:fs/promises';
 import { extname } from 'node:path';
 
-export class OcrEngineAWSTextractPdf {
+export class OcrEngineAWSTextract {
   constructor() {
-    this.name = 'TextractPdf';
+    this.name = 'textract';
   }
 
   /**
