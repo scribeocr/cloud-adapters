@@ -186,4 +186,26 @@ export class OcrEngineGoogleVision {
       }
     }
   };
+
+  /**
+   * Combines output from the asynchronous Google Vision API into a single object.
+   * @param {Array<Object>} responses
+   */
+  static combineGoogleVisionAsyncResponses = (responses) => {
+    if (!responses || responses.length === 0) {
+      throw new Error('No responses to combine.');
+    }
+
+    const combined = JSON.parse(JSON.stringify(responses[0]));
+
+    for (let i = 1; i < responses.length; i++) {
+      if (responses[i]?.responses) {
+        combined.responses.push(
+          ...JSON.parse(JSON.stringify(responses[i].responses)),
+        );
+      }
+    }
+
+    return combined;
+  };
 }

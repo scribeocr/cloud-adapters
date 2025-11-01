@@ -5,7 +5,9 @@ import { OcrEngineGoogleVision } from '../ocrEngineGoogleVision.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const filePath = path.join(__dirname, '../../rotation_text_test.pdf');
+const filePath = path.join(__dirname, './assets/CSF_Proposed_Budget_Book_June_2024_r8_30_all_orientations.pdf');
+
+const combineResponses = true;
 
 const options = {
   gcsBucket: 'vision-test-misc-us-east-1',
@@ -21,9 +23,16 @@ if (!result.success) {
 const parsedPath = path.parse(filePath);
 const suffix = 'GoogleVision.json';
 
-for (let i = 0; i < result.data.length; i++) {
-  const outputFileName = `${parsedPath.name}-p${i}-${suffix}`;
+if (combineResponses) {
+  const outputFileName = `${parsedPath.name}-${suffix}`;
   const outputPath = path.join(parsedPath.dir, outputFileName);
-  console.log(`Writing result to ${outputPath}`);
-  await fs.promises.writeFile(outputPath, JSON.stringify(result.data[i], null, 2));
+  console.log(`Writing combined result to ${outputPath}`);
+  await fs.promises.writeFile(outputPath, JSON.stringify(OcrEngineGoogleVision.combineGoogleVisionAsyncResponses(result.data), null, 2));
+} else {
+  for (let i = 0; i < result.data.length; i++) {
+    const outputFileName = `${parsedPath.name}-p${i}-${suffix}`;
+    const outputPath = path.join(parsedPath.dir, outputFileName);
+    console.log(`Writing result to ${outputPath}`);
+    await fs.promises.writeFile(outputPath, JSON.stringify(result.data[i], null, 2));
+  }
 }

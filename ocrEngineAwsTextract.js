@@ -313,4 +313,46 @@ export class OcrEngineAWSTextract {
       errorCode: 'Timeout',
     };
   };
+
+  /**
+   * Combines multiple paginated responses from an asynchronous Textract job into a single response object.
+   * @param {Array<Object>} responses - An array of response objects from GetDocumentAnalysisCommand or GetDocumentTextDetectionCommand.
+   * @returns {Object} A single, combined response object.
+   */
+  static combineTextractAsyncResponses = (responses) => {
+    if (!responses || responses.length === 0) {
+      return {};
+    }
+
+    const combined = {
+      Blocks: [],
+      Warnings: [],
+    };
+
+    let documentMetadata = null;
+
+    for (const response of responses) {
+      if (response.Blocks) {
+        combined.Blocks.push(...response.Blocks);
+      }
+      if (response.Warnings) {
+        combined.Warnings.push(...response.Warnings);
+      }
+      if (response.DocumentMetadata && !documentMetadata) {
+        documentMetadata = response.DocumentMetadata;
+      }
+    }
+
+    if (documentMetadata) {
+      combined.DocumentMetadata = documentMetadata;
+    }
+
+    // Carry over other relevant top-level fields from the first response, except for pagination tokens.
+    const template = { ...responses[0] };
+    delete template.Blocks;
+    delete template.Warnings;
+    delete template.NextToken;
+
+    return { ...template, ...combined };
+  };
 }

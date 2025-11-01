@@ -6,7 +6,7 @@ import { OcrEngineAWSTextract } from '../ocrEngineAwsTextract.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 // Note: The sync interface does not support .pdf files.
-const filePath = path.join(__dirname, '../../tests/assets/analyst_report.png');
+const filePath = path.join(__dirname, './assets/testocr.png');
 
 const options = {
   analyzeLayout: true,
