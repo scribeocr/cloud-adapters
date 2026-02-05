@@ -61,7 +61,7 @@ export class OcrEngineAWSTextract {
    * @param {string} [options.s3Key] - S3 key prefix (optional, auto-generated if not provided)
    * @param {boolean} [options.keepS3File] - Whether to keep the uploaded S3 file after processing
    * @param {number} [options.pollingInterval] - Polling interval in milliseconds (default: 5000)
-   * @param {number} [options.maxWaitTime] - Maximum wait time in milliseconds (default: 300000 = 5 minutes)
+   * @param {number} [options.maxWaitTime] - Maximum wait time in milliseconds (default: 1800000 = 30 minutes)
    */
   static recognizeFileAsync = async (filePath, {
     analyzeLayout = false,
@@ -70,7 +70,7 @@ export class OcrEngineAWSTextract {
     s3Key,
     keepS3File = false,
     pollingInterval = 5000,
-    maxWaitTime = 300000,
+    maxWaitTime = 1800000,
   } = {}) => {
     try {
       const fileExtension = extname(filePath).toLowerCase();
@@ -159,7 +159,7 @@ export class OcrEngineAWSTextract {
     s3Key,
     keepS3File = false,
     pollingInterval = 5000,
-    maxWaitTime = 300000,
+    maxWaitTime = 1800000,
   } = {}) => {
     const textractClient = new TextractClient({
       region: process.env.AWS_REGION || 'us-east-1',
