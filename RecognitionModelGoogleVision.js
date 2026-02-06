@@ -13,8 +13,7 @@ import { OcrEngineGoogleVision } from './ocrEngineGoogleVision.js';
  */
 export class GoogleVisionModel {
   static config = {
-    name: 'google_vision',
-    displayName: 'Google Vision',
+    name: 'Google Vision',
     outputFormat: 'google_vision',
   };
 

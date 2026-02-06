@@ -13,8 +13,7 @@ import { OcrEngineAWSTextract } from './ocrEngineAwsTextract.js';
  */
 export class RecognitionModelTextract {
   static config = {
-    name: 'aws_textract',
-    displayName: 'AWS Textract',
+    name: 'AWS Textract',
     outputFormat: 'textract',
   };
 
