@@ -9,15 +9,7 @@
 import { OcrEngineGoogleVision } from './ocrEngineGoogleVision.js';
 
 /**
- * Google Cloud Vision recognition model for use with scribe.js.
- *
- * @example
- * import scribe from 'scribe.js';
- * import { GoogleVisionModel } from './cloud-adapters/googleVisionModel.js';
- *
- * scribe.RecognitionModelRegistry.register(GoogleVisionModel);
- * await scribe.importFiles(['document.png']);
- * await scribe.recognize({ model: 'google_vision' });
+ * Google Cloud Vision recognition model for use with Scribe.js.
  */
 export class GoogleVisionModel {
   static config = {
